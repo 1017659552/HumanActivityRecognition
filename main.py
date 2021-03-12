@@ -37,7 +37,8 @@ def getPathImg(path,files):
 '''
 root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-img_width = 160
+n_epochs = 6
+img_width = 120
 img_height = 120
 crop_size = 120
 
@@ -49,6 +50,14 @@ train_labels = []
 for img_name in tqdm(train_img_name):
     # 加载图片
     img = np.array(cv2.imread(img_name,cv2.IMREAD_GRAYSCALE)) #读取灰度图像
+    # 查看灰度直方图
+    # print(img_name.split('\\')[5])
+    # if(img_name.split('\\')[5]=='Jogging'):
+    #     hist = cv2.calcHist([img], [0], None, [256], [0, 256])
+    #     print(hist)
+    #     plt.hist(img.ravel(), 256, [0,256])
+    #     plt.show()
+    #     print(hist)
     # 裁剪图片
     y0 = int((img_height-crop_size)/2)
     x0 = int((img_width-crop_size)/2)
@@ -92,65 +101,70 @@ val_x = torch.from_numpy(val_x)
 val_y = torch.from_numpy(val_y)
 # print(val_x.shape)
 
-# module_v1 = module_v1.Net()
-module_v1 = module_v2.LeNet()
+module_v1 = module_v1.Net()
+# module_v1 = module_v2.LeNet()
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = 0.07)
 # 定义loss函数
 criterion = nn.CrossEntropyLoss()
 # 检查gpu
 # 检查gpu是否可用，否则使用cpu
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("use device:",device)
-torch.cuda.empty_cache()
-
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# print("use device:",device)
+# torch.cuda.empty_cache()
+#
 # if torch.cuda.is_available():
 #     module_v1.to(device)
 #     criterion.to(device)
+
 print("使用的模型如下：")
 print(module_v1)
 
 
-# def train(epoch):
-#     module_v1.train()
-#     tr_loss = 0
-#     #获取训练集和验证集
-#     x_train,y_train = Variable(train_x),Variable(train_y)
-#     x_val,y_val = Variable(val_x),Variable(val_y)
-#     # 转换为gpu格式
-#     # if torch.cuda.is_available():
-#     #     x_train = x_train.to(device)
-#     #     y_train = y_train.to(device)
-#     #     x_val = x_val.to(device)
-#     #     y_val = y_val.to(device)
-#     # 清除梯度
-#     optimizer.zero_grad()
-#     # 预测训练与验证集
-#     output_train = module_v1(x_train)
-#     output_val = module_v1(x_val)
-#     # 计算验证集和训练集损失
-#     loss_train = criterion(output_train,y_train)
-#     loss_val = criterion(output_val,y_val)
-#     train_losses.append(loss_train)
-#     val_losses.append(loss_val)
-#     # 更新权重
-#     loss_train.backword()
-#     optimizer.step()
-#     tr_loss = loss_train.item()
-#     if(epoch%2==0):
-#         #输出验证集loss
-#         print('Epoch:',epoch+1,'  loss:',loss_val)
-#
-# n_epochs = 5
-# train_losses = []
-# val_losses = []
-# for epoch in range(n_epochs):
-#     train(epoch)
-#
-# plt.plot(train_losses,label = 'Training loss')
-# plt.plot(val_losses,label='Validation loss')
-# plt.legend()
-# plt.show()
+def train(epoch):
+    module_v1.train()
+    tr_loss = 0
+    #获取训练集和验证集
+    x_train,y_train = Variable(train_x),Variable(train_y)
+    x_val,y_val = Variable(val_x),Variable(val_y)
+    # 转换为gpu格式
+    # if torch.cuda.is_available():
+    #     x_train = x_train.to(device)
+    #     y_train = y_train.to(device)
+    #     x_val = x_val.to(device)
+    #     y_val = y_val.to(device)
+    #这里转换标签的格式，否则会报错 expected scalar type Long but found Int
+    y_train = y_train.type(torch.LongTensor)
+    y_val = y_val.type(torch.LongTensor)
+
+    # 清除梯度
+    optimizer.zero_grad()
+    # 预测训练与验证集
+    output_train = module_v1(x_train)
+    output_val = module_v1(x_val)
+    # 计算验证集和训练集损失
+    loss_train = criterion(output_train,y_train)
+    loss_val = criterion(output_val,y_val)
+    train_losses.append(loss_train)
+    val_losses.append(loss_val)
+    # 更新权重
+    loss_train.backward()
+    optimizer.step()
+    tr_loss = loss_train.item()
+    if(epoch%2==0):
+        #输出验证集loss
+        print('Epoch:',epoch+1,'  loss:',loss_val)
+
+
+train_losses = []
+val_losses = []
+for epoch in tqdm(range(n_epochs)):
+    train(epoch)
+
+plt.plot(train_losses,label = 'Training loss')
+plt.plot(val_losses,label='Validation loss')
+plt.legend()
+plt.show()
 
 with torch.no_grad():
     output = module_v1(train_x)

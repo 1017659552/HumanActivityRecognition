@@ -26,7 +26,8 @@ class Net(nn.Module):  # 1*120*120
         )
 
         self.linear_layers = nn.Sequential(
-            nn.Linear(8*30*30,6)##########################这里记得修改类别数
+            nn.Linear(8 * 30 * 30, 120),
+            nn.Linear(120,6)##########################这里记得修改类别数
         )
     #前项传播
     def forward(self,x):
