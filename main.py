@@ -41,7 +41,7 @@ def getPathImg(path,files):
 # root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess'
 root_dir = '/home/mist/KTH_preprocess'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 6
+n_epochs = 30
 img_width = 120
 img_height = 120
 crop_size = 120
@@ -102,7 +102,7 @@ train_y = torch.from_numpy(train_y)
 # print(train_x.shape)
 # 将验证集转换成torch张量
 val_x_len = len(val_x)
-val_x = val_x.reshape(val_x_len,crop_size,1,crop_size)
+val_x = val_x.reshape(val_x_len,1,crop_size,crop_size)
 val_x = torch.from_numpy(val_x)
 val_y = torch.from_numpy(val_y)
 # print(val_x.shape)
@@ -132,8 +132,8 @@ print("use device:",device)
 print("使用的模型如下：")
 # print(module_v1)
 
-for epoch in range(1, 10):
-    train_loss, valid_loss = [], []
+for epoch in range(1,n_epochs):
+    train_loss = []
     correct = 0
     total = 0
     module_v1.train()  # 训练开始
@@ -156,7 +156,8 @@ for epoch in range(1, 10):
     #     loss = loss_function(output, target)
     #     valid_loss.append(loss.item())
 
-    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(valid_loss)))
+    # print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(valid_loss)))
+    print("Epoch:{}, Training Loss:{}".format(epoch, np.mean(train_loss)))
 print("======= Training Finished ! =========")
 
 print("Testing Begining ... ")  # 模型测试
