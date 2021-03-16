@@ -17,19 +17,13 @@ class Net(nn.Module):  # 1*120*120
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2,stride=2), # 8*30*30
 
-            # 第二个卷积层
-            # nn.Conv2d(8, 16, kernel_size=3, stride=1, padding=1),  # 16*30*30
-            # nn.BatchNorm2d(16),
-            # nn.ReLU(inplace=True),
-            # nn.MaxPool2d(kernel_size=2, stride=2)  # 16*15*15
-
         )
 
         self.linear_layers = nn.Sequential(
             nn.Linear(8 * 30 * 30, 120),
-            nn.Linear(120,6)##########################这里记得修改类别数
+            nn.Linear(120,6)
         )
-    #前项传播
+
     def forward(self,x):
         x = self.cnn_layers(x)
         x = x.view(x.size(0),-1)

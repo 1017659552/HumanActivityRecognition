@@ -15,13 +15,15 @@ import torch.utils.data as Data
 
 import network.module_v1 as module_v1
 import network.module_v2 as module_v2
+import network.module_v3 as module_v3
 
 ########### 参数设置 #################
 # root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess'
-root_dir = '/home/mist/KTH_preprocess'
+root_dir = '/home/mist/KTH_preprocess_v2'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
 n_epochs = 30
-n_batch_size = 128
+n_batch_size = 24
+n_lr = 1e-3
 
 img_width = 120
 img_height = 120
@@ -104,13 +106,14 @@ data_train = DataLoader(Data.TensorDataset(train_x,train_y),batch_size=n_batch_s
 data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
 data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
 
-module_v1 = module_v1.Net()
+# module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
+module_v1 = module_v3.Net2()
 
 # 定义优化器
-# optimizer = Adam(module_v1.parameters(),lr = 0.001)
+optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
 # optimizer = SGD(module_v1.parameters(),lr = 1e-5)
-optimizer = SGD(module_v1.parameters(), lr=0.01, weight_decay=1e-6, momentum=0.9, nesterov=True)
+# optimizer = SGD(module_v1.parameters(), lr=n_lr)
 
 # 定义loss函数
 criterion = nn.CrossEntropyLoss()
@@ -125,12 +128,13 @@ criterion.to(device)
 
 # print("使用的模型如下：")
 # print(module_v1)
-
+train_loss = []
+val_loss = []
 for epoch in tqdm(range(1,n_epochs)):
-    train_loss = []
-    val_loss = []
     correct = 0
     total = 0
+    loss_train = []
+    loss_val = []
     module_v1.train()  # 训练开始
     for inputs, labels in data_train:
         # 把数据放在gpu上
@@ -139,10 +143,16 @@ for epoch in tqdm(range(1,n_epochs)):
 
         optimizer.zero_grad()  # 梯度置0
         output = module_v1(inputs)
-        loss = criterion(output, labels)  # 计算损失
+
+        # 将损失函数softmax一下
+        probs = nn.Softmax(dim=1)(output)
+        # probs = torch.max(probs,1)[1]
+        loss = criterion(probs, labels)  # 计算损失
+        loss_train.append(loss.item())
+
         loss.backward()  # 反向传播
         optimizer.step()  # 更新参数
-        train_loss.append(loss.item())
+
         # 输出正确率
         total += labels.size(0)
         _, preds_tensor = torch.max(output, 1)
@@ -157,10 +167,12 @@ for epoch in tqdm(range(1,n_epochs)):
 
         output = module_v1(inputs)
         loss = criterion(output, labels)
-        val_loss.append(loss.item())
+        loss_val.append(loss.item())
 
+    train_loss.append(np.mean(loss_train))
+    val_loss.append(np.mean(loss_val))
     print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(val_loss)))
-    print("Epoch:{}, Training Loss:{}".format(epoch, np.mean(train_loss)))
+    # print("Epoch:{}, Training Loss:{}".format(epoch, np.mean(train_loss)))
 print("======= Training Finished ! =========")
 
 plt.plot(train_loss,label = 'Training loss')

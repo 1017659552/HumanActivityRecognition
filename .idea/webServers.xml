@@ -2,8 +2,15 @@
 <project version="4">
   <component name="WebServers">
     <option name="servers">
-      <webServer id="ccfbfa29-c1fe-4a4c-98b7-ea6fc058ca85" name="a">
-        <fileTransfer accessType="SFTP" host="gpu193.mistgpu.xyz" port="21000" sshConfigId="f0f5ca4a-5d77-4142-8eaf-5b3317fc5e4c" sshConfig="mist@gpu193.mistgpu.xyz:21000 password">
+      <webServer id="eb641e1d-eb04-4e50-8de7-89bdb6804b92" name="a">
+        <fileTransfer accessType="SFTP" host="gpu25.mistgpu.xyz" port="36000" sshConfigId="f0f5ca4a-5d77-4142-8eaf-5b3317fc5e4c" sshConfig="mist@gpu25.mistgpu.xyz:36000 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="dbcf2efc-794c-4058-84e6-f18d5db729ee" name="b">
+        <fileTransfer accessType="SFTP" port="22" sshConfigId="8c999ce2-1c77-4085-baed-661fb19cfa5c" sshConfig="b">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>

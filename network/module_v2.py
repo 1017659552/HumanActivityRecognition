@@ -1,4 +1,4 @@
-#LeNet网络
+#修改的LeNet网络
 import torch.nn as nn
 import torch.nn.functional as F
 class LeNet(nn.Module): # 1*120*120

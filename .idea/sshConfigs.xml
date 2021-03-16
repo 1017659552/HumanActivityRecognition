@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="gpu193.mistgpu.xyz" id="e9892cb8-2694-4dcd-91be-011fae8613f9" port="21000" nameFormat="DESCRIPTIVE" username="mist" />
+      <sshConfig authType="PASSWORD" id="8c999ce2-1c77-4085-baed-661fb19cfa5c" port="22" customName="b" nameFormat="CUSTOM">
+        <option name="customName" value="b" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

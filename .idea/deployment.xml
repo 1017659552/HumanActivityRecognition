@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="mist@gpu193.mistgpu.xyz:21000 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="mist@gpu35.mistgpu.xyz:47000 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="a">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="b">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
@@ -16,14 +23,21 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="mist@gpu35.mistgpu.xyz:48000 password">
+      <paths name="mist@gpu25.mistgpu.xyz:36000 password">
         <serverdata>
           <mappings>
             <mapping deploy="/tmp/mycode" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="mist@gpu35.mistgpu.xyz:48000 password (1)">
+      <paths name="mist@gpu35.mistgpu.xyz:47000 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/mycode" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="mist@gpu35.mistgpu.xyz:48000 password">
         <serverdata>
           <mappings>
             <mapping deploy="/tmp/mycode" local="$PROJECT_DIR$" />
