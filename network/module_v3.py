@@ -66,6 +66,7 @@ class Net2(nn.Module): # 1*120*120
             # nn.Dropout(0.5)
         )
 
+
         self.fc1 = nn.Linear(128*6*6,4096)
         self.dropfc1 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(4096,6)

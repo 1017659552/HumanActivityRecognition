@@ -21,8 +21,8 @@ import network.module_v3 as module_v3
 # root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess'
 root_dir = '/home/mist/KTH_preprocess_v2'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 30
-n_batch_size = 24
+n_epochs = 99
+n_batch_size = 64
 n_lr = 1e-3
 
 img_width = 120
@@ -88,6 +88,9 @@ print("正在加载数据集... ...")
 train_img_list = getPathImg(os.path.join(root_dir,'train'),[])
 val_img_list = getPathImg(os.path.join(root_dir,'val'),[])
 test_img_list = getPathImg(os.path.join(root_dir,'test'),[])
+np.random.shuffle(train_img_list)
+np.random.shuffle(val_img_list)
+np.random.shuffle(test_img_list)
 
 # 获取图像矩阵，标签信息
 print("正在加载图像... ...")
@@ -113,7 +116,7 @@ module_v1 = module_v3.Net2()
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
 # optimizer = SGD(module_v1.parameters(),lr = 1e-5)
-# optimizer = SGD(module_v1.parameters(), lr=n_lr)
+
 
 # 定义loss函数
 criterion = nn.CrossEntropyLoss()
@@ -171,7 +174,8 @@ for epoch in tqdm(range(1,n_epochs)):
 
     train_loss.append(np.mean(loss_train))
     val_loss.append(np.mean(loss_val))
-    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(val_loss)))
+    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(loss_train), np.mean(loss_val)))
+    print("Accuracy : {} %".format(correct / total))
     # print("Epoch:{}, Training Loss:{}".format(epoch, np.mean(train_loss)))
 print("======= Training Finished ! =========")
 
