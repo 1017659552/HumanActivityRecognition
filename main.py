@@ -16,19 +16,21 @@ import torch.utils.data as Data
 import network.module_v1 as module_v1
 import network.module_v2 as module_v2
 import network.module_v3 as module_v3
+import network.module_v4 as module_v4
 
 ########### 参数设置 #################
-# root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess'
+# root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v2'
 root_dir = '/home/mist/KTH_preprocess_v2'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 99
-n_batch_size = 64
-n_lr = 1e-3
+n_epochs = 30
+n_batch_size = 32
+n_lr = 1e-2
 
 img_width = 120
 img_height = 120
 crop_size = 120
 ####################################
+print(root_dir)
 
 # 递归获取目录下所有文件名
 def getPathImg(path,files):
@@ -47,16 +49,17 @@ def getImg(img_list):
     imgs_label = []
     for img_name in tqdm(img_list):
         # 加载图片
+        # img_name = "D:\\SWUFEthesis\\data\\KTH_preprocess\\train\\Jogging\\person01_jogging_d2_uncomp\\00044.jpg" #00044
         img = np.array(cv2.imread(img_name, cv2.IMREAD_GRAYSCALE))  # 读取灰度图像
         # 查看灰度直方图
         # print(img_name.split('\\')[5])
         # if(img_name.split('\\')[5]=='Jogging'):
         #     hist = cv2.calcHist([img], [0], None, [256], [0, 256])
-        #     print(hist)
+        #     # print(hist)
         #     plt.hist(img.ravel(), 256, [0,256])
         #     plt.show()
-        #     print(hist)
-        # 裁剪图片
+        #     # print(hist)
+        # # 裁剪图片
         y0 = int((img_height - crop_size) / 2)
         x0 = int((img_width - crop_size) / 2)
         img = img[y0:crop_size + y0, x0:crop_size + x0]
@@ -88,9 +91,6 @@ print("正在加载数据集... ...")
 train_img_list = getPathImg(os.path.join(root_dir,'train'),[])
 val_img_list = getPathImg(os.path.join(root_dir,'val'),[])
 test_img_list = getPathImg(os.path.join(root_dir,'test'),[])
-np.random.shuffle(train_img_list)
-np.random.shuffle(val_img_list)
-np.random.shuffle(test_img_list)
 
 # 获取图像矩阵，标签信息
 print("正在加载图像... ...")
@@ -111,12 +111,13 @@ data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size
 
 # module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
-module_v1 = module_v3.Net2()
+# module_v1 = module_v3.Net2()
+module_v1 = module_v4.AlexNet()
 
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
 # optimizer = SGD(module_v1.parameters(),lr = 1e-5)
-
+# optimizer = SGD(module_v1.parameters(), lr=n_lr)
 
 # 定义loss函数
 criterion = nn.CrossEntropyLoss()
@@ -174,9 +175,8 @@ for epoch in tqdm(range(1,n_epochs)):
 
     train_loss.append(np.mean(loss_train))
     val_loss.append(np.mean(loss_val))
-    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(loss_train), np.mean(loss_val)))
+    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(val_loss)))
     print("Accuracy : {} %".format(correct / total))
-    # print("Epoch:{}, Training Loss:{}".format(epoch, np.mean(train_loss)))
 print("======= Training Finished ! =========")
 
 plt.plot(train_loss,label = 'Training loss')
