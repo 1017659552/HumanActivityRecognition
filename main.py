@@ -4,8 +4,6 @@ import random
 import os
 import cv2
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import  accuracy_score
 import torch
 from torch.optim import Adam,SGD
 import torch.nn as nn
@@ -13,24 +11,28 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torch.utils.data as Data
 
+import dataset.preprocess as preprocess
+
 import network.module_v1 as module_v1
 import network.module_v2 as module_v2
 import network.module_v3 as module_v3
 import network.module_v4 as module_v4
 
 ########### 参数设置 #################
-# root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v2'
-root_dir = '/home/mist/KTH_preprocess_v2'
+root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
+# root_dir = '/home/mist/KTH_preprocess_v2'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
 n_epochs = 30
 n_batch_size = 32
-n_lr = 1e-2
+n_lr = 1e-3
 
 img_width = 120
 img_height = 120
 crop_size = 120
 ####################################
 print(root_dir)
+
+preprocess.MyDataset()
 
 # 递归获取目录下所有文件名
 def getPathImg(path,files):
@@ -68,8 +70,8 @@ def getImg(img_list):
         img = img.astype(np.float32)
         imgs_content.append(img)
         # 加载标签
-        # label = img_name.split('\\')[-2].split('_')[1] ######################本地
-        label = img_name.split('/')[-2].split('_')[1]  #######################远程
+        label = img_name.split('\\')[-2].split('_')[1] ######################本地
+        # label = img_name.split('/')[-2].split('_')[1]  #######################远程
         imgs_label.append(labels.index(label))
 
     assert len(imgs_label) == len(imgs_content), '图像和标签数量不一致，退出程序！'
@@ -111,8 +113,8 @@ data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size
 
 # module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
-# module_v1 = module_v3.Net2()
-module_v1 = module_v4.AlexNet()
+module_v1 = module_v3.Net2()
+# module_v1 = module_v4.AlexNet()
 
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
@@ -143,7 +145,7 @@ for epoch in tqdm(range(1,n_epochs)):
     for inputs, labels in data_train:
         # 把数据放在gpu上
         inputs = Variable(inputs,requires_grad=True).to(device)
-        labels = Variable(labels).to(device)
+        labels = Variable(labels).to(device,dtype=torch.int64)
 
         optimizer.zero_grad()  # 梯度置0
         output = module_v1(inputs)
@@ -167,7 +169,7 @@ for epoch in tqdm(range(1,n_epochs)):
     for inputs, labels in data_val:
 
         inputs = Variable(inputs, requires_grad=True).to(device)
-        labels = Variable(labels).to(device)
+        labels = Variable(labels).to(device,dtype=torch.int64)
 
         output = module_v1(inputs)
         loss = criterion(output, labels)
@@ -190,7 +192,7 @@ correct = 0
 for i, data_tuple in enumerate(data_test, 0):
     inputs, labels = data_tuple
     inputs = Variable(inputs, requires_grad=True).to(device)
-    labels = Variable(labels).to(device)
+    labels = Variable(labels).to(device,dtype=torch.int64)
 
     output = module_v1(inputs)
     _, preds_tensor = torch.max(output, 1)
