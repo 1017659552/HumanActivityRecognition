@@ -17,13 +17,14 @@ import network.module_v1 as module_v1
 import network.module_v2 as module_v2
 import network.module_v3 as module_v3
 import network.module_v4 as module_v4
+import network.module_v5 as module_v5
 
 ########### 参数设置 #################
-root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
-# root_dir = '/home/mist/KTH_preprocess_v2'
+# root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
+root_dir = '/home/mist/KTH_preprocess_v3'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 30
-n_batch_size = 32
+n_epochs = 32
+n_batch_size = 64
 n_lr = 1e-3
 
 img_width = 120
@@ -32,7 +33,7 @@ crop_size = 120
 ####################################
 print(root_dir)
 
-preprocess.MyDataset()
+# preprocess.MyDataset()
 
 # 递归获取目录下所有文件名
 def getPathImg(path,files):
@@ -70,8 +71,8 @@ def getImg(img_list):
         img = img.astype(np.float32)
         imgs_content.append(img)
         # 加载标签
-        label = img_name.split('\\')[-2].split('_')[1] ######################本地
-        # label = img_name.split('/')[-2].split('_')[1]  #######################远程
+        # label = img_name.split('\\')[-2].split('_')[1] ######################本地
+        label = img_name.split('/')[-2].split('_')[1]  #######################远程
         imgs_label.append(labels.index(label))
 
     assert len(imgs_label) == len(imgs_content), '图像和标签数量不一致，退出程序！'
@@ -113,8 +114,9 @@ data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size
 
 # module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
-module_v1 = module_v3.Net2()
+# module_v1 = module_v3.Net2()
 # module_v1 = module_v4.AlexNet()
+module_v1 = module_v5.C3D()
 
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
@@ -136,9 +138,13 @@ criterion.to(device)
 # print(module_v1)
 train_loss = []
 val_loss = []
+train_acc = []
+val_acc = []
 for epoch in tqdm(range(1,n_epochs)):
-    correct = 0
-    total = 0
+    correct_train = 0
+    correct_val = 0
+    total_train = 0
+    total_val = 0
     loss_train = []
     loss_val = []
     module_v1.train()  # 训练开始
@@ -160,9 +166,10 @@ for epoch in tqdm(range(1,n_epochs)):
         optimizer.step()  # 更新参数
 
         # 输出正确率
-        total += labels.size(0)
+        total_train += labels.size(0)
         _, preds_tensor = torch.max(output, 1)
-        correct += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
+        correct_train += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
+        train_acc.append(np.mean(correct_train / total_train))
         # print(correct / total)
 
     module_v1.eval()  # 验证开始
@@ -175,14 +182,29 @@ for epoch in tqdm(range(1,n_epochs)):
         loss = criterion(output, labels)
         loss_val.append(loss.item())
 
+        total_val += labels.size(0)
+        _, preds_tensor = torch.max(output, 1)
+        correct_val += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
+        val_acc.append(np.mean(correct_val / total_val))
+
     train_loss.append(np.mean(loss_train))
     val_loss.append(np.mean(loss_val))
-    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(train_loss), np.mean(val_loss)))
-    print("Accuracy : {} %".format(correct / total))
+    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(loss_train), np.mean(loss_val)))
+    # print("Accuracy : {} %".format(correct / total))
 print("======= Training Finished ! =========")
 
 plt.plot(train_loss,label = 'Training loss')
 plt.plot(val_loss,label = 'Validation loss')
+plt.legend()
+plt.show()
+
+plt.plot(train_acc,label = 'Training acc')
+# plt.plot(val_acc,label = 'Validation acc')
+plt.legend()
+plt.show()
+
+# plt.plot(train_acc,label = 'Training acc')
+plt.plot(val_acc,label = 'Validation acc')
 plt.legend()
 plt.show()
 

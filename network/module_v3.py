@@ -36,9 +36,9 @@ class Net2(nn.Module): # 1*120*120
         )
 
 
-        self.fc1 = nn.Linear(128*6*6,4096)
+        self.fc1 = nn.Linear(128*6*6,128)
         self.dropfc1 = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(4096,6)
+        self.fc2 = nn.Linear(128,6)
 
     def forward(self,x):
         out = self.conv1(x)
