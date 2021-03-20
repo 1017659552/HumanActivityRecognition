@@ -32,6 +32,3 @@ def image2array(image_path):
             Img10 = Img10.reshape(1, crop_size, crop_size, 1)
             cube = np.concatenate((cube, Img10), axis=0)
     return cube
-
-def getImgPatn():
-    imgpath = path

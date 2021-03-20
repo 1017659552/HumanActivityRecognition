@@ -11,7 +11,8 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torch.utils.data as Data
 
-import dataset.preprocess as preprocess
+# import dataset.preprocess as preprocess
+from dataset.preprocess import MyDataset
 
 import network.module_v1 as module_v1
 import network.module_v2 as module_v2
@@ -23,9 +24,9 @@ import network.module_v5 as module_v5
 # root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
 root_dir = '/home/mist/KTH_preprocess_v3'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 32
+n_epochs = 6
 n_batch_size = 64
-n_lr = 1e-3
+n_lr = 1e-2
 
 img_width = 120
 img_height = 120
@@ -90,27 +91,31 @@ def to_tensor(x,y):
     return x,y
 
 # 获取train,val,test路径下的图像名
-print("正在加载数据集... ...")
-train_img_list = getPathImg(os.path.join(root_dir,'train'),[])
-val_img_list = getPathImg(os.path.join(root_dir,'val'),[])
-test_img_list = getPathImg(os.path.join(root_dir,'test'),[])
-
-# 获取图像矩阵，标签信息
-print("正在加载图像... ...")
-train_x,train_y = getImg(train_img_list)
-val_x,val_y = getImg(val_img_list)
-test_x,test_y = getImg(test_img_list)
-
-# 转换为tensor
-train_x,train_y = to_tensor(train_x,train_y)
-val_x,val_y = to_tensor(val_x,val_y)
-test_x,test_y = to_tensor(test_x,test_y)
+# print("正在加载数据集... ...")
+# train_img_list = getPathImg(os.path.join(root_dir,'train'),[])
+# val_img_list = getPathImg(os.path.join(root_dir,'val'),[])
+# test_img_list = getPathImg(os.path.join(root_dir,'test'),[])
+#
+# # 获取图像矩阵，标签信息
+# print("正在加载图像... ...")
+# train_x,train_y = getImg(train_img_list)
+# val_x,val_y = getImg(val_img_list)
+# test_x,test_y = getImg(test_img_list)
+#
+# # 转换为tensor
+# train_x,train_y = to_tensor(train_x,train_y)
+# val_x,val_y = to_tensor(val_x,val_y)
+# test_x,test_y = to_tensor(test_x,test_y)
 
 # DataLoader加载数据集
 print("正在读取数据集... ...")
-data_train = DataLoader(Data.TensorDataset(train_x,train_y),batch_size=n_batch_size,shuffle=True)
-data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
-data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
+# data_train = DataLoader(Data.TensorDataset(train_x,train_y),batch_size=n_batch_size,shuffle=True)
+# data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
+# data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
+
+data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=6, shuffle=True)
+data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=6, shuffle=True)
+data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=6, shuffle=True)
 
 # module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
@@ -177,8 +182,9 @@ for epoch in tqdm(range(1,n_epochs)):
 
         inputs = Variable(inputs, requires_grad=True).to(device)
         labels = Variable(labels).to(device,dtype=torch.int64)
-
+        optimizer.zero_grad()  # 梯度置0
         output = module_v1(inputs)
+
         loss = criterion(output, labels)
         loss_val.append(loss.item())
 

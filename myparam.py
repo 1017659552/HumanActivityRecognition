@@ -1,7 +1,7 @@
 class Param(object):
     def dataset_dir(self):
         root_dir = 'D:\\SWUFEthesis\\data\\KTH'
-        process_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
+        # process_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
         process_dir = '/home/mist/KTH_preprocess_v3'
         return root_dir,process_dir
 
@@ -17,3 +17,4 @@ class Param(object):
         n_batch_size = 32
         n_lr = 1e-2
         return labels,n_epochs,n_batch_size,n_lr
+

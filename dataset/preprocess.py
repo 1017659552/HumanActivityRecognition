@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-# import torch
+import torch
 
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -9,15 +9,26 @@ from torch.utils.data import Dataset
 from myparam import Param
 
 from sklearn.cluster import KMeans
+import shutil
 
 class MyDataset(Dataset):
     # preprocess_cut 是否执行视频分割帧操作
     # preprocess_rmbg 是否执行删除背景操作
-    def __init__(self,preprocess_cut=False,preprocess_rmbg=False):
+    def __init__(self,preprocess_cut=False,preprocess_rmbg=False,split='train',clip_len=16):
         self.root_dir, self.output_dir = Param.dataset_dir(self)
         self.crop_size,self.frame_width,self.frame_height = Param.img_size(self)
+        self.clip_len = clip_len
 
-        folder = os.path.join(self.output_dir, 'train')
+        folder = os.path.join(self.output_dir, split)
+        self.fnames,labels = [],[]
+        for label in sorted(os.listdir(folder)): # 每个类别
+            for fname in os.listdir(os.path.join(folder,label)): # 打开每个类别的文件夹
+                self.fnames.append(os.path.join(folder,label,fname))
+                labels.append(label)
+
+        self.label2index = {label: index for index, label in enumerate(sorted(set(labels)))}
+        # 将类别转换为索引 [0 0 0 0 0 1 1 1 1 ......]
+        self.label_array = np.array([self.label2index[label] for label in labels], dtype=int)
 
         # 数据预处理—-视频分割帧
         if(preprocess_cut):
@@ -28,6 +39,14 @@ class MyDataset(Dataset):
         if(preprocess_rmbg):
             print('正在执行删除背景图片操作...')
             self.preprocess_rmbg()
+
+        # 检查图片数量少于16
+        for label in sorted(os.listdir(folder)): # 每个类别
+            for fname in os.listdir(os.path.join(folder,label)): # 打开每个类别的文件夹
+                img_path = os.path.join(folder,label,fname)
+                num = os.listdir(img_path)
+                if(len(num)<self.clip_len):
+                    shutil.rmtree(img_path)
 
     def preprocess_cut(self):
         # 自动创建文件夹
@@ -160,3 +179,42 @@ class MyDataset(Dataset):
                 if label_pred[i] == 1:
                     os.remove(os.path.join(category_dir,img_list[i]))
                     print('成功删除！ path = ' + os.path.join(category_dir, img_list[i]))
+
+
+########################################33
+    def __len__(self):
+        return  len(self.fnames)
+
+    # 按规定重写
+    def __getitem__(self, item):
+        buffer = self.load_frames(self.fnames[item]) # 加载视频帧
+        buffer = self.crop(buffer,self.clip_len,self.crop_size) # 选取帧片段并进行裁剪
+        labels = np.array(self.label_array[item])   # 加载标签
+        buffer = self.to_tensor(buffer)
+        return torch.from_numpy(buffer), torch.from_numpy(labels)
+
+    def load_frames(self,frame_dir):
+        frames = sorted([os.path.join(frame_dir,img) for img in os.listdir(frame_dir)])
+        frame_count = len(frames)
+        ######################
+        # buffer = np.empty((frame_count,self.crop_size,self.crop_size),np.dtype('float32'))
+        buffer = np.empty((frame_count, 120, 120,3), np.dtype('float32'))
+        # print(buffer.shape)
+        for i,frame_name in enumerate(frames):
+            frame = np.array(cv2.imread(frame_name,cv2.IMREAD_UNCHANGED)) # 读取灰色图像 cv2.IMREAD_GRAYSCALE cv2.IMREAD_UNCHANGED
+            # frame = frame / 255.0
+            # frame = frame.astype(np.float64)
+            # print(frame.shape)
+            buffer[i] = frame
+        # print(buffer.shape)
+        return buffer
+
+    def crop(self,buffer,clip_len,crop_size):
+        # time_index = np.random.randint(buffer.shape[0]-clip_len) # 保证能取到clip_len帧
+        # print(len(buffer))
+        buffer = buffer[0:clip_len]
+
+        return buffer
+
+    def to_tensor(self, buffer):
+        return buffer.transpose((3,0, 1, 2))
