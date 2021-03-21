@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="mist@gpu35.mistgpu.xyz:47500 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="mist@gpu35.mistgpu.xyz:48500 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="a">
         <serverdata>
@@ -27,6 +27,13 @@
         <serverdata>
           <mappings>
             <mapping deploy="/tmp/pycharm_project_83" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="mist@gpu35.mistgpu.xyz:48500 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_57" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

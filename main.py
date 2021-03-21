@@ -113,15 +113,15 @@ print("正在读取数据集... ...")
 # data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
 # data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
 
-data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=6, shuffle=True)
-data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=6, shuffle=True)
-data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=6, shuffle=True)
+data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=1, shuffle=True)
+data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=1, shuffle=True)
+data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=1, shuffle=True)
 
 # module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
-# module_v1 = module_v3.Net2()
+module_v1 = module_v3.Net2()
 # module_v1 = module_v4.AlexNet()
-module_v1 = module_v5.C3D()
+# module_v1 = module_v5.C3D()
 
 # 定义优化器
 optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
