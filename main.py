@@ -1,5 +1,6 @@
 from tqdm import tqdm
-import  numpy as np
+import numpy as np
+import pandas as pd
 import random
 import os
 import cv2
@@ -9,9 +10,7 @@ from torch.optim import Adam,SGD
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-import torch.utils.data as Data
 
-# import dataset.preprocess as preprocess
 from dataset.preprocess import MyDataset
 
 import network.module_v1 as module_v1
@@ -21,11 +20,11 @@ import network.module_v4 as module_v4
 import network.module_v5 as module_v5
 
 ########### 参数设置 #################
-# root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
-root_dir = '/home/mist/KTH_preprocess_v3'
+root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
+# root_dir = '/home/mist/old/KTH_preprocess_v3'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 6
-n_batch_size = 64
+n_epochs = 30
+n_batch_size = 128
 n_lr = 1e-2
 
 img_width = 120
@@ -113,19 +112,19 @@ print("正在读取数据集... ...")
 # data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
 # data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
 
-data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=1, shuffle=True)
-data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=1, shuffle=True)
-data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=1, shuffle=True)
+data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=n_batch_size, shuffle=True)
+data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=n_batch_size, shuffle=True)
+data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=n_batch_size, shuffle=True)
 
-# module_v1 = module_v1.Net()
+module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
-module_v1 = module_v3.Net2()
+# module_v1 = module_v3.Net2()
 # module_v1 = module_v4.AlexNet()
 # module_v1 = module_v5.C3D()
 
 # 定义优化器
-optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=0.0005)
-# optimizer = SGD(module_v1.parameters(),lr = 1e-5)
+# optimizer = Adam(module_v1.parameters(),lr = n_lr,betas=(0.9, 0.99), eps=1e-06, weight_decay=1e-3) # 加了这个，全部预测为同一个类
+optimizer = SGD(module_v1.parameters(),lr = n_lr)
 # optimizer = SGD(module_v1.parameters(), lr=n_lr)
 
 # 定义loss函数
@@ -141,68 +140,95 @@ criterion.to(device)
 
 # print("使用的模型如下：")
 # print(module_v1)
-train_loss = []
-val_loss = []
+# train_loss = []
+# val_loss = []
 train_acc = []
 val_acc = []
+# train_loss_show = []
+# val_loss_show = []
 for epoch in tqdm(range(1,n_epochs)):
     correct_train = 0
     correct_val = 0
     total_train = 0
     total_val = 0
-    loss_train = []
-    loss_val = []
+    # loss_train = []
+    # loss_val = []
     module_v1.train()  # 训练开始
-    for inputs, labels in data_train:
+
+    for inputs, inf in data_train:
+        # 创建投票空表格
+        vote_table = pd.DataFrame(columns=('video_name', '0', '1', '2', '3', '4', '5'))
+        vote_table = vote_table.iloc[1:7].astype(int)
+
         # 把数据放在gpu上
         inputs = Variable(inputs,requires_grad=True).to(device)
-        labels = Variable(labels).to(device,dtype=torch.int64)
+        # labels_tensor = torch.Tensor(labels[0])
+        label = Variable(inf[0]).to(device,dtype=torch.int64)
 
         optimizer.zero_grad()  # 梯度置0
         output = module_v1(inputs)
 
-        # 将损失函数softmax一下
+        # 将结果softmax一下，转换为概率
         probs = nn.Softmax(dim=1)(output)
-        # probs = torch.max(probs,1)[1]
-        loss = criterion(probs, labels)  # 计算损失
-        loss_train.append(loss.item())
+        probs_label = torch.max(probs, 1)[1].cpu().numpy()
+
+        # 按照概率进行投票
+        for i in range(0,len(probs_label)):
+            video_name = inf[1][i]
+            index = vote_table[vote_table['video_name']==video_name].index.tolist()
+            if len(index)==0:
+                # print('b')
+                num_row = vote_table.shape[0]
+                vote_table.loc[num_row] = [video_name,0,0,0,0,0,0]
+                vote_table.iloc[num_row,probs_label[i]+1] = 1
+            else:
+                tmp = vote_table.iloc[num_row,probs_label[i]+1]
+                vote_table.iloc[num_row,probs_label[i]+1] = tmp+1
+
+        # c = vote_table.iloc[:,1:6]
+        vote_table['class'] = vote_table.iloc[:,1:7].idxmax(axis=1)
+        loss = criterion(probs, label)  # 计算损失
+        # loss_train.append(loss.item())
 
         loss.backward()  # 反向传播
         optimizer.step()  # 更新参数
 
         # 输出正确率
-        total_train += labels.size(0)
+        total_train += label.size(0)
         _, preds_tensor = torch.max(output, 1)
-        correct_train += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
+        correct_train += np.squeeze((preds_tensor == label).sum().cpu().numpy())
         train_acc.append(np.mean(correct_train / total_train))
         # print(correct / total)
 
-    module_v1.eval()  # 验证开始
-    for inputs, labels in data_val:
+    # module_v1.eval()  # 验证开始
+    # for inputs, labels in data_val:
+    #
+    #     inputs = Variable(inputs, requires_grad=True).to(device)
+    #     labels = Variable(labels).to(device,dtype=torch.int64)
+    #     optimizer.zero_grad()  # 梯度置0
+    #     output = module_v1(inputs)
+    #
+    #     probs = nn.Softmax(dim=1)(output)
+    #     loss = criterion(probs, labels)
+    #     loss_val.append(loss.item())
+    #
+    #     total_val += labels.size(0)
+    #     _, preds_tensor = torch.max(output, 1)
+    #     correct_val += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
+    #     val_acc.append(np.mean(correct_val / total_val))
 
-        inputs = Variable(inputs, requires_grad=True).to(device)
-        labels = Variable(labels).to(device,dtype=torch.int64)
-        optimizer.zero_grad()  # 梯度置0
-        output = module_v1(inputs)
-
-        loss = criterion(output, labels)
-        loss_val.append(loss.item())
-
-        total_val += labels.size(0)
-        _, preds_tensor = torch.max(output, 1)
-        correct_val += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
-        val_acc.append(np.mean(correct_val / total_val))
-
-    train_loss.append(np.mean(loss_train))
-    val_loss.append(np.mean(loss_val))
-    print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(loss_train), np.mean(loss_val)))
+    # train_loss.append(np.mean(loss_train))
+    # val_loss.append(np.mean(loss_val))
+    # train_loss_show.append(np.mean(train_loss))
+    # val_loss_show.append(np.mean(val_loss))
+    # print("Epoch:{}, Training Loss:{}, Valid Loss:{}".format(epoch, np.mean(loss_train), np.mean(loss_val)))
     # print("Accuracy : {} %".format(correct / total))
 print("======= Training Finished ! =========")
 
-plt.plot(train_loss,label = 'Training loss')
-plt.plot(val_loss,label = 'Validation loss')
-plt.legend()
-plt.show()
+# plt.plot(train_loss,label = 'Training loss')
+# plt.plot(val_loss,label = 'Validation loss')
+# plt.legend()
+# plt.show()
 
 plt.plot(train_acc,label = 'Training acc')
 # plt.plot(val_acc,label = 'Validation acc')

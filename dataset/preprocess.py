@@ -2,6 +2,8 @@ import os
 import cv2
 import numpy as np
 import torch
+import PIL.Image as Image
+from torchvision import transforms as transforms
 
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -19,6 +21,7 @@ class MyDataset(Dataset):
         self.crop_size,self.frame_width,self.frame_height = Param.img_size(self)
         self.clip_len = clip_len
         self.get3d_data = get3d_data
+        folder = os.path.join(self.output_dir, split)
 
         # 数据预处理—-视频分割帧
         if(preprocess_cut):
@@ -30,7 +33,16 @@ class MyDataset(Dataset):
             print('正在执行删除背景图片操作...')
             self.preprocess_rmbg()
 
-        folder = os.path.join(self.output_dir, split)
+        # 随机翻转
+        # for label in sorted(os.listdir(folder)):  # 每个类别
+        #     for fname in os.listdir(os.path.join(folder, label)):  # 打开每个类别的文件夹
+        #         for imgs in os.listdir(os.path.join(folder, label, fname)):
+        #             im = Image.open(os.path.join(folder, label, fname,imgs))
+        #             new_im = transforms.RandomHorizontalFlip(p=0.5)(im)  # p表示概率
+        #             new_im.save(os.path.join(folder,label,fname,imgs+'a.jpg'))
+        #             new_im = transforms.RandomVerticalFlip(p=0.5)(im)
+        #             new_im.save(os.path.join(folder,label,fname,imgs+'b.jpg'))
+
         self.fnames,labels = [],[]
         if(get3d_data):
             for label in sorted(os.listdir(folder)): # 每个类别
@@ -192,6 +204,7 @@ class MyDataset(Dataset):
         return  len(self.fnames)
 
     # 按规定重写
+    # 重新定义返回结构 buffer , [类别，视频名]
     def __getitem__(self, item):
         if(self.get3d_data):
             buffer = self.load_frames(self.fnames[item]) # 加载视频帧
@@ -208,7 +221,11 @@ class MyDataset(Dataset):
             buffer_img = buffer_img.astype(np.float64)
 
             buffer_img = buffer_img.reshape(1,self.crop_size, self.crop_size)
-            return torch.Tensor(buffer_img), labels
+            inf = []
+            inf.append(labels)
+            inf.append(os.path.abspath(os.path.dirname(buffer)).split('\\')[-1])
+
+            return torch.Tensor(buffer_img), inf
 
 
     def load_frames(self,frame_dir):
@@ -236,3 +253,8 @@ class MyDataset(Dataset):
 
     def to_tensor(self, buffer):
         return buffer.transpose((3,0, 1, 2))
+
+    def horizontal_flip(image):
+        HF = transforms.RandomHorizontalFlip()
+        hf_image = HF(image)
+        return hf_image

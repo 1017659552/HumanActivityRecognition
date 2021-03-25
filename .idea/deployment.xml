@@ -1,43 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="mist@gpu35.mistgpu.xyz:48500 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="mist@gpu180.mistgpu.xyz:20201 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="a">
+      <paths name="aa">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="mist@gpu191.mistgpu.xyz:19110 password">
+      <paths name="mist@gpu100.mistgpu.xyz:30110 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/mycode" local="$PROJECT_DIR$" />
+            <mapping deploy="/tmp/pycharm_project_597" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="mist@gpu35.mistgpu.xyz:47500 password">
+      <paths name="mist@gpu180.mistgpu.xyz:20201 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/pycharm_project_46" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="mist@gpu35.mistgpu.xyz:48000 password">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/tmp/pycharm_project_83" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="mist@gpu35.mistgpu.xyz:48500 password">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/tmp/pycharm_project_57" local="$PROJECT_DIR$" />
+            <mapping deploy="/tmp/pycharm_project_528" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
     </serverData>
-    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
