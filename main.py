@@ -10,6 +10,7 @@ from torch.optim import Adam,SGD
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score
 
 from dataset.preprocess import MyDataset
 
@@ -23,9 +24,9 @@ import network.module_v5 as module_v5
 root_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v3'
 # root_dir = '/home/mist/old/KTH_preprocess_v3'
 labels = ['boxing','handclapping','handwaving','jogging','running','walking']
-n_epochs = 30
+n_epochs = 6
 n_batch_size = 128
-n_lr = 1e-2
+n_lr = 1e-3
 
 img_width = 120
 img_height = 120
@@ -111,15 +112,19 @@ print("正在读取数据集... ...")
 # data_train = DataLoader(Data.TensorDataset(train_x,train_y),batch_size=n_batch_size,shuffle=True)
 # data_val = DataLoader(Data.TensorDataset(val_x,val_y),batch_size=n_batch_size,shuffle=True)
 # data_test = DataLoader(Data.TensorDataset(test_x,test_y),batch_size=n_batch_size,shuffle=True)
-
+# 读取数据集
 data_train = DataLoader(MyDataset(split='train', clip_len=16),batch_size=n_batch_size, shuffle=True)
 data_test = DataLoader(MyDataset(split='test', clip_len=16), batch_size=n_batch_size, shuffle=True)
 data_val = DataLoader(MyDataset(split='val', clip_len=16), batch_size=n_batch_size, shuffle=True)
+# 读取标签目录
+catalog_train = pd.read_table('./dataset/catalog_train.txt',sep=',')
+catalog_test = pd.read_table('./dataset/catalog_test.txt',sep=',')
+catalog_val = pd.read_table('./dataset/catalog_val.txt',sep=',')
 
-module_v1 = module_v1.Net()
+# module_v1 = module_v1.Net()
 # module_v1 = module_v2.LeNet()
 # module_v1 = module_v3.Net2()
-# module_v1 = module_v4.AlexNet()
+module_v1 = module_v4.AlexNet()
 # module_v1 = module_v5.C3D()
 
 # 定义优化器
@@ -140,7 +145,7 @@ criterion.to(device)
 
 # print("使用的模型如下：")
 # print(module_v1)
-# train_loss = []
+train_loss = []
 # val_loss = []
 train_acc = []
 val_acc = []
@@ -151,10 +156,10 @@ for epoch in tqdm(range(1,n_epochs)):
     correct_val = 0
     total_train = 0
     total_val = 0
-    # loss_train = []
+    loss_train = []
     # loss_val = []
-    module_v1.train()  # 训练开始
 
+    module_v1.train()  # 训练开始
     for inputs, inf in data_train:
         # 创建投票空表格
         vote_table = pd.DataFrame(columns=('video_name', '0', '1', '2', '3', '4', '5'))
@@ -170,6 +175,7 @@ for epoch in tqdm(range(1,n_epochs)):
 
         # 将结果softmax一下，转换为概率
         probs = nn.Softmax(dim=1)(output)
+        probs_cpu = probs.cpu().detach().numpy()
         probs_label = torch.max(probs, 1)[1].cpu().numpy()
 
         # 按照概率进行投票
@@ -179,26 +185,54 @@ for epoch in tqdm(range(1,n_epochs)):
             if len(index)==0:
                 # print('b')
                 num_row = vote_table.shape[0]
-                vote_table.loc[num_row] = [video_name,0,0,0,0,0,0]
-                vote_table.iloc[num_row,probs_label[i]+1] = 1
+                vote_table.loc[num_row] = [video_name,probs_cpu[i][0],probs_cpu[i][1],probs_cpu[i][2],probs_cpu[i][3],probs_cpu[i][4],probs_cpu[i][5]]
+                # vote_table.iloc[num_row,probs_label[i]+1] = 1
             else:
-                tmp = vote_table.iloc[num_row,probs_label[i]+1]
-                vote_table.iloc[num_row,probs_label[i]+1] = tmp+1
+                tmp = index[0]
+                vote_table.iloc[tmp,1] = (vote_table.iloc[tmp,1]+probs_cpu[tmp][0])/2
+                vote_table.iloc[tmp, 2] = (vote_table.iloc[tmp, 2] + probs_cpu[tmp][1]) / 2
+                vote_table.iloc[tmp, 3] = (vote_table.iloc[tmp, 3] + probs_cpu[tmp][2]) / 2
+                vote_table.iloc[tmp, 4] = (vote_table.iloc[tmp, 4] + probs_cpu[tmp][3]) / 2
+                vote_table.iloc[tmp, 5] = (vote_table.iloc[tmp, 5] + probs_cpu[tmp][4]) / 2
+                vote_table.iloc[tmp, 6] = (vote_table.iloc[tmp, 6] + probs_cpu[tmp][5]) / 2
 
-        # c = vote_table.iloc[:,1:6]
-        vote_table['class'] = vote_table.iloc[:,1:7].idxmax(axis=1)
-        loss = criterion(probs, label)  # 计算损失
+                # vote_table.iloc[tmp, 2] += probs_cpu[tmp][1]
+                # # vote_table.iloc[tmp, 3] += probs_cpu[tmp][2]
+                # # vote_table.iloc[tmp, 4] += probs_cpu[tmp][3]
+                # # vote_table.iloc[tmp, 5] += probs_cpu[tmp][4]
+                # # vote_table.iloc[tmp, 6] += probs_cpu[tmp][5]
+
+                # tmp = vote_table.iloc[index[0],probs_label[i]+1]
+                # vote_table.iloc[num_row,probs_label[i]+1] = tmp+1
+
+        vote_table['pred_class'] = vote_table.iloc[:,1:7].idxmax(axis=1)
+        # pred_label = vote_table['class'].values
+        table_merge = pd.merge(vote_table,catalog_train,on='video_name')
+        pred_label = table_merge['pred_class'].astype(int).values
+        true_label = table_merge['class'].values
+
+        acc = accuracy_score(true_label,pred_label)
+        train_acc.append(acc)
+        print('Training acc : '+ str(acc))
+
+        probs_vote = table_merge.iloc[:,1:7].values
+        probs_vote_tensor = torch.tensor(probs_vote).requires_grad_()
+        true_vote_tensor = torch.tensor(true_label,dtype=torch.long)
+
+        loss = criterion(probs_vote_tensor, true_vote_tensor)  # 计算损失
+        loss_train.append(loss.item())
+
+        # loss = criterion(probs, label)  # 计算损失
         # loss_train.append(loss.item())
-
         loss.backward()  # 反向传播
         optimizer.step()  # 更新参数
 
         # 输出正确率
-        total_train += label.size(0)
-        _, preds_tensor = torch.max(output, 1)
-        correct_train += np.squeeze((preds_tensor == label).sum().cpu().numpy())
-        train_acc.append(np.mean(correct_train / total_train))
-        # print(correct / total)
+        # total_train += label.size(0)
+        # _, preds_tensor = torch.max(output, 1)
+        # correct_train += np.squeeze((preds_tensor == label).sum().cpu().numpy())
+        # train_acc.append(np.mean(correct_train / total_train))
+        # print(np.mean(correct_train / total_train))
 
     # module_v1.eval()  # 验证开始
     # for inputs, labels in data_val:
@@ -225,32 +259,81 @@ for epoch in tqdm(range(1,n_epochs)):
     # print("Accuracy : {} %".format(correct / total))
 print("======= Training Finished ! =========")
 
-# plt.plot(train_loss,label = 'Training loss')
+plt.plot(train_loss,label = 'Training loss')
 # plt.plot(val_loss,label = 'Validation loss')
-# plt.legend()
-# plt.show()
+plt.legend()
+plt.show()
 
 plt.plot(train_acc,label = 'Training acc')
 # plt.plot(val_acc,label = 'Validation acc')
 plt.legend()
 plt.show()
 
-# plt.plot(train_acc,label = 'Training acc')
-plt.plot(val_acc,label = 'Validation acc')
-plt.legend()
-plt.show()
+# # plt.plot(train_acc,label = 'Training acc')
+# plt.plot(val_acc,label = 'Validation acc')
+# plt.legend()
+# plt.show()
 
 print("Testing Begining ... ")  # 模型测试
-total = 0
-correct = 0
-for i, data_tuple in enumerate(data_test, 0):
-    inputs, labels = data_tuple
+test_acc = []
+for inputs, inf in data_test:
+    # 创建投票空表格
+    vote_table = pd.DataFrame(columns=('video_name', '0', '1', '2', '3', '4', '5'))
+    vote_table = vote_table.iloc[1:7].astype(int)
+
+    # 把数据放在gpu上
     inputs = Variable(inputs, requires_grad=True).to(device)
-    labels = Variable(labels).to(device,dtype=torch.int64)
+    # labels_tensor = torch.Tensor(labels[0])
+    label = Variable(inf[0]).to(device, dtype=torch.int64)
 
+    optimizer.zero_grad()  # 梯度置0
     output = module_v1(inputs)
-    _, preds_tensor = torch.max(output, 1)
 
-    total += labels.size(0)
-    correct += np.squeeze((preds_tensor == labels).sum().cpu().numpy())
-print("Accuracy : {} %".format(correct / total))
+    # 将结果softmax一下，转换为概率
+    probs = nn.Softmax(dim=1)(output)
+    probs_cpu = probs.cpu().detach().numpy()
+    probs_label = torch.max(probs, 1)[1].cpu().numpy()
+
+    # 按照概率进行投票
+    for i in range(0, len(probs_label)):
+        video_name = inf[1][i]
+        index = vote_table[vote_table['video_name'] == video_name].index.tolist()
+        if len(index) == 0:
+            # print('b')
+            num_row = vote_table.shape[0]
+            vote_table.loc[num_row] = [video_name, probs_cpu[i][0], probs_cpu[i][1], probs_cpu[i][2], probs_cpu[i][3],
+                                       probs_cpu[i][4], probs_cpu[i][5]]
+            # vote_table.iloc[num_row,probs_label[i]+1] = 1
+        else:
+            tmp = index[0]
+            vote_table.iloc[tmp, 1] = (vote_table.iloc[tmp, 1] + probs_cpu[tmp][0]) / 2
+            vote_table.iloc[tmp, 2] = (vote_table.iloc[tmp, 2] + probs_cpu[tmp][1]) / 2
+            vote_table.iloc[tmp, 3] = (vote_table.iloc[tmp, 3] + probs_cpu[tmp][2]) / 2
+            vote_table.iloc[tmp, 4] = (vote_table.iloc[tmp, 4] + probs_cpu[tmp][3]) / 2
+            vote_table.iloc[tmp, 5] = (vote_table.iloc[tmp, 5] + probs_cpu[tmp][4]) / 2
+            vote_table.iloc[tmp, 6] = (vote_table.iloc[tmp, 6] + probs_cpu[tmp][5]) / 2
+
+    vote_table['pred_class'] = vote_table.iloc[:, 1:7].idxmax(axis=1)
+    # pred_label = vote_table['class'].values
+    table_merge = pd.merge(vote_table, catalog_test, on='video_name')
+    pred_label = table_merge['pred_class'].astype(int).values
+    true_label = table_merge['class'].values
+
+    acc = accuracy_score(true_label, pred_label)
+    train_acc.append(acc)
+    print('Training acc : ' + str(acc))
+
+    probs_vote = table_merge.iloc[:, 1:7].values
+    probs_vote_tensor = torch.tensor(probs_vote).requires_grad_()
+    true_vote_tensor = torch.tensor(true_label,dtype=torch.long)
+
+    loss = criterion(probs_vote_tensor, true_vote_tensor)  # 计算损失
+
+    loss.backward()  # 反向传播
+    optimizer.step()  # 更新参数
+print("Accuracy : {} %".format(np.mean(test_acc)))
+
+plt.plot(test_acc,label = 'Testing acc')
+# plt.plot(val_acc,label = 'Validation acc')
+plt.legend()
+plt.show()

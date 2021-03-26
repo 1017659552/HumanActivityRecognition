@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import PIL.Image as Image
 from torchvision import transforms as transforms
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -65,6 +66,18 @@ class MyDataset(Dataset):
         # 将类别转换为索引 [0 0 0 0 0 1 1 1 1 ......]
         self.label_array = np.array([self.label2index[label] for label in labels], dtype=int)
 
+        # 创建视频目录标签,并写入文件
+        catalog_video = []
+        catalog_label_tmp = []
+
+        for label in sorted(os.listdir(folder)):  # 每个类别
+            for fname in os.listdir(os.path.join(folder, label)):
+                catalog_video.append(fname)
+                catalog_label_tmp.append(label)
+        catalog_label = np.array([self.label2index[item] for item in catalog_label_tmp], dtype=int)
+        # 创建DF并写入文件
+        catalog_table = pd.DataFrame({'video_name':catalog_video,'class':catalog_label})
+        catalog_table.to_csv(r'.\dataset\catalog_'+split+'.txt',index=None)
 
     def preprocess_cut(self):
         # 自动创建文件夹
