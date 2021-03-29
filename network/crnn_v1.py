@@ -7,14 +7,14 @@ class EncoderCNN(nn.Module):
         super(EncoderCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=5),  # 16*116
+            nn.Conv2d(3, 16, kernel_size=3),  # 16*116
             nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),  # 16*58
         )
 
         self.conv2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=5),  # 32*56
+            nn.Conv2d(16, 32, kernel_size=3),  # 32*56
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),  # 32*28
@@ -36,21 +36,21 @@ class EncoderCNN(nn.Module):
         self.drop = nn.Dropout2d(0.5)
         self.fc1 = nn.Linear(128*5*5,1200)
         self.fc2 = nn.Linear(1200,512)
-        self.fc3 = nn.Linear(512,300)
+        self.fc3 = nn.Linear(1200,300)
 
     def forward(self,x_3d):
         cnn_embed_seq = []
         # 分别对序列中的每一张图片做CNN
-        for t in range(x_3d.size(2)):
+        for t in range(x_3d.size(1)):
             #CNNs
-            out = self.conv1(x_3d[:, :, t, :, :])
+            out = self.conv1(x_3d[:, t, :, :, :])
             out = self.conv2(out)
             out = self.conv3(out)
             out = self.conv4(out)
             out = out.view(out.size(0),-1)
             #FCs
             out = nn.ReLU()(self.fc1(out))
-            out = nn.ReLU()(self.fc2(out))
+            # out = nn.ReLU()(self.fc2(out))
             out = self.drop(out)
             out = self.fc3(out)
 
@@ -71,7 +71,7 @@ class DecoderRNN(nn.Module):
             batch_first=True
         )
 
-        self.drop = nn.Dropout2d(0.5)
+        self.drop = nn.Dropout2d(0.3)
         self.fc1 = nn.Linear(256,128)
         self.fc2 = nn.Linear(128, 6)
 

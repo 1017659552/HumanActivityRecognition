@@ -30,6 +30,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="mist@ygg.mistgpu.xyz:61600 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_32" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
     </serverData>
     <option name="myAutoUpload" value="ALWAYS" />
   </component>

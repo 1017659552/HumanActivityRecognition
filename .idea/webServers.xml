@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="a11f7cb6-977f-4a5b-baf1-fe81a4d7107b" name="aa">
-        <fileTransfer accessType="SFTP" host="gpu28.mistgpu.com" port="41500" sshConfigId="fb378952-ca5c-4e79-b572-d1b857d7e567" sshConfig="mist@gpu28.mistgpu.com:41500 password">
+        <fileTransfer accessType="SFTP" host="ygg.mistgpu.xyz" port="61600" sshConfigId="ad9899fd-d630-46b0-8ac4-1d646b34c3b2" sshConfig="mist@ygg.mistgpu.xyz:61600 password">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>

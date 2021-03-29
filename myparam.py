@@ -1,8 +1,8 @@
 class Param(object):
     def dataset_dir(self):
         root_dir = 'D:\\SWUFEthesis\\data\\KTH'
-        # process_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v2'
-        process_dir = '/home/mist/KTH_preprocess_v2'
+        # process_dir = 'D:\\SWUFEthesis\\data\\KTH_preprocess_v5_reorder'
+        process_dir = '/home/mist/KTH_preprocess_v5_reorder'
         return root_dir,process_dir
 
     def img_size(self):

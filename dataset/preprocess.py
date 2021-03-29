@@ -249,14 +249,11 @@ class MyDataset(Dataset):
         buffer = np.empty((frame_count, self.crop_size,self.crop_size,3), np.dtype('float32'))
         # print(buffer.shape)
         for i,frame_name in enumerate(frames):
-            try:
-                frame = np.array(cv2.imread(frame_name,cv2.IMREAD_UNCHANGED))
-                frame = frame / 255.0
-                frame = frame.astype(np.float64)
-                # print(frame.shape)
-                buffer[i] = frame
-            except IOError:
-                print(frame_name)
+            frame = np.array(cv2.imread(frame_name,cv2.IMREAD_UNCHANGED))
+            frame = frame / 255.0
+            frame = frame.astype(np.float64)
+            # print(frame.shape)
+            buffer[i] = frame
             # frame = np.array(cv2.imread(frame_name,cv2.IMREAD_UNCHANGED)) # 读取灰色图像 cv2.IMREAD_GRAYSCALE cv2.IMREAD_UNCHANGED
             # frame = frame / 255.0
             # frame = frame.astype(np.float64)
@@ -266,14 +263,15 @@ class MyDataset(Dataset):
         return buffer
 
     def crop(self,buffer,clip_len,crop_size):
-        # time_index = np.random.randint(buffer.shape[0]-clip_len) # 保证能取到clip_len帧
+        time_index = np.random.randint(buffer.shape[0]-clip_len) # 保证能取到clip_len帧
         # print(len(buffer))
-        buffer = buffer[0:clip_len]
+        buffer = buffer[time_index:time_index+clip_len]
 
         return buffer
 
     def to_tensor(self, buffer):
-        return buffer.transpose((3,0, 1, 2))
+        ten = buffer.transpose((0,3, 1, 2))
+        return ten
 
     def horizontal_flip(image):
         HF = transforms.RandomHorizontalFlip()
